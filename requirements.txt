@@ -1,6 +1,6 @@
-tqdm
-pandas
-numpy
-python-opencv
-dtw
-scenic
+tqdm==4.50.2
+pandas==1.2.3
+numpy==1.20
+opencv-python==4.2.0.34
+dtw==1.4.0
+scenic==2.0.0

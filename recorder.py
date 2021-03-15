@@ -17,16 +17,7 @@ from tqdm import tqdm
 from pathlib import Path
 
 try:
-    sys.path.append(
-        glob.glob(
-            "../carla/dist/carla-*%d.%d-%s.egg"
-            % (
-                sys.version_info.major,
-                sys.version_info.minor,
-                "win-amd64" if os.name == "nt" else "linux-x86_64",
-            )
-        )[0]
-    )
+    sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
 except IndexError:
     pass
 

@@ -9,9 +9,7 @@ Prerequisites(Ubuntu 20.04/18.04)
     1. Use the tar.gz instead of the `apt` method to ensure we can access the carla/PythonAPI folder without changing too many permissions
 2. Python environment
     1. Python 3.8
-    2. Set up the the Carla Python API
-        1. `easy_install carla_folder/PythonAPI/carla/dist/carla-0.9.9-py3.7-linux-x86_64.egg`
-        2. replace `carla_folder` with the folder where you extracted Carla
+    2. Set up the the Carla Python API - ensure the Carla Python API egg file is present in `libs/`. If you install a Carla version that is not 0.9.9, ensure to copy the `python3.x` egg file from the `PythonAPI/carla/dist` folder in your Carla directory to the `libs` folder here. Also ensure you update the path to the egg file in the `recorder.py` script
     3. Use the requirements file to install other dependencies
         1. `pip install -r requirements.txt`
     4. For the modelling section, use the requirements file in the `modelling` folder
