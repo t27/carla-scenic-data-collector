@@ -4,3 +4,4 @@ numpy==1.20
 opencv-python==4.2.0.34
 dtw==1.4.0
 scenic==2.0.0
+pyarrow==3.0.0

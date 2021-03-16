@@ -1,4 +1,8 @@
-
+import sys
+try:
+    sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+except IndexError:
+    pass
 
 ## SET MAP AND MODEL (i.e. definitions of all referenceable vehicle types, road library, etc)
 param map = localPath('maps/CARLA/Town03.xodr')  # or other CARLA map that definitely works

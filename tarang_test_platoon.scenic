@@ -1,3 +1,9 @@
+import sys
+try:
+    sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+except IndexError:
+    pass
+
 param map = localPath('maps/CARLA/Town03.xodr')  
 param carla_map = 'Town03'
 param weather = 'ClearNoon' 

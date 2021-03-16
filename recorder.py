@@ -125,8 +125,8 @@ def run(client, round_name, dest_folder="", session_duration_sec=10):
             client.get_world().apply_settings(settings)
         else:
             synchronous_master = False
-        session_recording = f"replay_{round_name}.csv"
-        destination_path = dest_folder / Path(session_recording)
+        session_recording = f"replay_{round_name}"
+        destination_filename = dest_folder / Path(session_recording)
 
         world.tick()
         # fmt: off
@@ -168,7 +168,10 @@ def run(client, round_name, dest_folder="", session_duration_sec=10):
         pbar.close()
         print("Saving CSV")
         # df.to_parquet("session_data.parquet")
-        df.to_csv(str(destination_path), index=False)
+        df.to_csv(str(destination_filename) + ".csv", index=False)
+        print("Saving Parquet")
+        # df.to_parquet("session_data.parquet")
+        df.to_csv(str(destination_filename) + ".parquet", index=False)
         world.tick()
         # if args.recorder_time > 0:
         #     time.sleep(args.recorder_time)
