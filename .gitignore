@@ -2,4 +2,5 @@
 debris_avoidance_recordings
 oncoming_car_recordings
 **/.ipynb_checkpoints
+**/__pycache__
 *.dot

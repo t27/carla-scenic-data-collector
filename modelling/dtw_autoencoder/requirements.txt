@@ -1,0 +1,6 @@
+torch==1.4.0
+torchvision==0.5.0
+scipy==1.6.0
+scikit-learn==0.24.0
+matplotlib==3.3.4
+wandb==0.10.12

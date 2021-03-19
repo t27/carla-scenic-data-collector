@@ -27,7 +27,7 @@ Prerequisites(Ubuntu 20.04/18.04)
 
 3. Python Scripts
     - `generate_agent_maps` - Convert the scenario CSV to individual agent and frame level data - This is usually time consuming, but it helps in the modelling related dataprep later
-    - `generate_segment_trajectories` - Convert the individual agent level data to other model specific formats(mainly used for the dtw maps right now)
+    - `generate_segment_trajectories` - Convert the individual agent level data to other model specific formats(used for the dtw maps and the random forest based classifier as well)
     - `traffic_light_and_speed_limit_recorder` - a Carla Python API based traffic light violation and speed limit violation data generator. The current feature set of scenic does not all for the specific traffic manager control that we need hence this is used now. The plan is to add those features into scenic so that we can have a `.scenic` file with the traffic light and speed limit violating agents
     - `visualize_agent_maps` - visualizes the maps created in 'generate_agent_maps'
 
@@ -43,6 +43,16 @@ Prerequisites(Ubuntu 20.04/18.04)
 2. From the current project folder, run `record_data.sh` 
     - The data will be stored in the relevant recording folders
 3. We can now proceed to use this scenario level data for the modelling tasks
+
+# Modelling Approaches
+
+We also include 2 ways to use the data collected in models. The modelling code also includes the data preparation steps.
+
+## Random Forest Based Frame Classifier
+
+This classifier used frame level features extracted from each frame that we record. These frame level features are extracted from both _normal_ and _anomalous_ scenarios. 
+Each frame results in one training record and is either _normal_ or _anomalous_. We then collect all the frames, shuffle them and formulate the problem as a supervised classification task.
+We use a random forest and a MLP Classifier. We use the standard implementations of these models in the Scikit-learn library with relevant hyperparameters.
 
 
 ## TODO: Add the modelling notes and howto

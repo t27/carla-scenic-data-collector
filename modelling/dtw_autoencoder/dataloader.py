@@ -1,6 +1,8 @@
 import sys
 
 sys.path.insert(0, "..")
+sys.path.insert(0, "../..")
+
 from generate_segment_trajectories import get_dtw_maps
 
 import torch
