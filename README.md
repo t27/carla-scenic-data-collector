@@ -46,7 +46,7 @@ Prerequisites(Ubuntu 20.04/18.04)
 
 # Modelling Approaches
 
-We also include 2 ways to use the data collected in models. The modelling code also includes the data preparation steps.
+We include 2 ways to use the data collected in models. The modelling code also includes the data preparation steps. Also, the data preparation code(`generate_agent_maps.py` and `generate_segment_trajectories.py`) currently assumes a set of conventions on the filenames for the recording files.
 
 ## Random Forest Based Frame Classifier
 
@@ -54,5 +54,32 @@ This classifier used frame level features extracted from each frame that we reco
 Each frame results in one training record and is either _normal_ or _anomalous_. We then collect all the frames, shuffle them and formulate the problem as a supervised classification task.
 We use a random forest and a MLP Classifier. We use the standard implementations of these models in the Scikit-learn library with relevant hyperparameters.
 
+### Data Prep
 
-## TODO: Add the modelling notes and howto
+The data prep for the frame classifier model is available in the `generate_segment_trajectories.py` file in the `get_basic_dataframe` function. This function requires the individual agent maps to be generated through the `generate_agent_maps.py` module. 
+
+`get_basic_dataframe` parses through the agent maps and aggregates the frame level stats using the various helper functions.  
+
+### Modelling
+
+The modelling code is available in the [`modelling/frame_classifier/model.py`](modelling/frame_classifier/model.py) file. This file includes the modelling and visualization code. Also, more visualization code and examples can be found in the [`playground/basic_model.ipynb`](playground/basic_model.ipynb) notebook.
+
+
+## DTW Auto Encoder
+
+The DTW Autoencoder uses agent level dtw maps. The dtw maps consider the ego and each of the surrounding agents to generate a 2D dtw cost map. For each neighbor of the ego, we get a cost map. We then stack these maps to generate a 3D stack of maps. The maximum height of the stack is fixed. If we have less number of neighbors than the maximum, we pad the stack with zeros. 
+
+This DTW map is used in a Convolutional Autoencoder. First, we train the autoencoder with all the _normal_ scenario data. Now, once the autoencoder is trained, we can use the encoder to encode any scenario into a single vector.
+
+### Data Prep
+
+For the autoencoder the main process involves building the DTW map tensor. This is done in the `generate_segment_trajectories.py` file in the `get_dtw_map` function. 
+
+### Modelling
+
+The model, the dataloader, the training code and the inference code can be found in the `modelling/dtw_autoencoder` folder. Also, in the inference, we cache the vectors generated from the encoder and use them for further modelling or visualization. These can be found in the playground as well - [`playground/dtw_modelling_data_experiments.ipynb`](playground/dtw_modelling_data_experiments.ipynb), [`playground/embedding_classifier.ipynb`](playground/embedding_classifier.ipynb) and [`playground/embedding_vis.ipynb`](playground/embedding_vis.ipynb).
+
+## Agent Maps
+
+Also, we can visualize the agent maps separately as well. This visualization is a simple 2D visualization of the agent maps. The `visualize_agent_maps.py` includes all the code to visualize these agent maps. 
+By default the code will popup a window showing the visualization and also store a video in the current directory.

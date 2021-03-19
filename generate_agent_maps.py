@@ -7,11 +7,13 @@ from collections import defaultdict
 from math import cos, sin, pi
 import os
 from tqdm import tqdm
+from pathlib import Path
 
 
 class CarlaCsvParser:
     def __init__(self, recording_folder, round_name) -> None:
         self.round_name = round_name
+        self.recording_folder = recording_folder
         print("Loading Dataframe...,", round_name)
         self.df = pd.read_csv(os.path.join(recording_folder, round_name) + ".csv")
         self.df.index.name = "index"
@@ -60,8 +62,9 @@ class CarlaCsvParser:
             # frame_df_local.to_parquet(
             #     f"agent_maps/{self.round_name}_vehicle_{center_agent_id}_frame_{frame_id}.parquet"
             # )
+            Path(f"agent_maps/{self.recording_folder}").mkdir(exist_ok=True)
             frame_df_local.to_csv(
-                f"agent_maps/{self.round_name}_vehicle_{center_agent_id}_frame_{frame_id}.csv.gz",
+                f"agent_maps/{self.recording_folder}/{self.round_name}_vehicle_{center_agent_id}_frame_{frame_id}.csv.gz",
                 compression="gzip",
             )
 
@@ -100,25 +103,19 @@ if __name__ == "__main__":
     # agent transforms and transform the other nearby agents for each agent in each frame,
     # more the agents more the time this step takes
     # rounds = ["round_1","round_2","round_3","round_4"]
-    rounds = [
-        # "tl_sl_round_0",
-        # "tl_sl_round_1",
-        # "tl_sl_round_2",
-        # "tl_sl_round_3",
-        # "tl_sl_round_4",
-        "tl_sl2_round_0",
-        "tl_sl2_round_1",
-        "tl_sl2_round_2",
+    folder_rounds = [
+        ("debris_avoidance_recordings", "scenario1"),
+        ("oncoming_car_recordings", "scenario1"),
     ]
     pool = ProcessPoolExecutor(6)
 
-    def job(roundname):
-        converter = CarlaCsvParser("./recordings", roundname)
+    def job(folder, roundname):
+        converter = CarlaCsvParser(folder, roundname)
         converter.run()
 
     futures = []
-    for round in rounds:
-        futures.append(pool.submit(job, round))
+    for folder, round in folder_rounds:
+        futures.append(pool.submit(job, folder, round))
 
     for x in as_completed(futures):
         x.result()

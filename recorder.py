@@ -197,12 +197,14 @@ def run(client, round_name, dest_folder="", session_duration_sec=10):
 
 
 def convert_recording(carla_recording, prefix="", dest_folder=""):
+    # use a prefix to specifically tag a roundname
     if dest_folder:
         Path(dest_folder).mkdir(exist_ok=True)
     try:
         host = "127.0.0.1"  # IP of the host server (default: 127.0.0.1)
         port = 2000  # TCP port to listen to (default: 2000)",
         client = carla.Client(host, port)
+        # extracts the file name = scenario1.log
         roundname = prefix + os.path.split(carla_recording)[-1]
 
         client2 = carla.Client(host, port)
@@ -227,5 +229,6 @@ if __name__ == "__main__":
     for folder in folders:
         files = glob.glob(f"./{folder}/*.log")
         for fil in files:
+            # TODO: identify format of prefix for each diff anomaly
             convert_recording(fil, dest_folder=folder)
 
