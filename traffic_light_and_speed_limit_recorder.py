@@ -41,6 +41,7 @@ import logging
 import pathlib
 
 current_dir = pathlib.Path(__file__).parent.absolute()
+random.seed(27)
 
 
 def get_metadata(actor, frame_id):
@@ -132,9 +133,9 @@ def attach_collision_sensor(actor, world):
     return collision_sensor
 
 
-def run(client, round_name):
+def run(client, round_name, recording_dir):
 
-    num_vehicles = 70
+    num_vehicles = 40
     safe = True  # avoid spawning vehicles prone to accidents"
 
     actor_list = []
@@ -143,10 +144,13 @@ def run(client, round_name):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
 
     try:
-        SESSION_DURATION = 300  # seconds
+        SESSION_DURATION = 50  # seconds
         FPS = 5
         DELTA_T = 1 / FPS
 
+        # how likely is a vehicle to violate
+        SPEED_VIOLATION_PROB = 60
+        TL_VIOLATION_PROB = 70
         # client.set_timeout(2.0)
         world = client.get_world()
         blueprints = world.get_blueprint_library().filter("vehicle.*")
@@ -162,8 +166,12 @@ def run(client, round_name):
         else:
             synchronous_master = False
 
-        session_recording = f"{round_name}.csv"
-        carla_session_recording = str(current_dir / f"{round_name}_carla_recording")
+        recording_dir_path = pathlib.Path(recording_dir)
+        recording_dir_path.mkdir(exist_ok=True)
+        session_recording = str(recording_dir_path / f"{round_name}.csv")
+        carla_session_recording = str(
+            recording_dir_path / f"{round_name}_carla_recording"
+        )
         print("Recording on file: %s" % client.start_recorder(carla_session_recording))
         vehicles_list, walkers_list, all_actors = spawn.spawn(
             client, world, num_vehicles, 0, safe
@@ -196,12 +204,15 @@ def run(client, round_name):
         non_vehicle_arr = [get_metadata(actor, frame_id) for actor in non_vehicles]
         df_arr += non_vehicle_arr
         pbar = tqdm(total=FPS * SESSION_DURATION)
-        while frame_id < (FPS * SESSION_DURATION):
-            if global_collision:
+        max_frames = FPS * SESSION_DURATION
+        collision_detected_once = False
+        while frame_id < max_frames:
+            if global_collision and not collision_detected_once:
                 # Todo, if detected, start a countdown of N frames and break only after N iterations
                 print("detected collision, exiting!")
-                time.sleep(5)
-                break
+                collision_detected_once = True
+                max_frames = frame_id + 5
+                # continue
 
             actors = world.get_actors()
             for actor in actors:
@@ -209,13 +220,11 @@ def run(client, round_name):
                     # print(actor.type_id)
                     tm_port = traffic_manager.get_port()
                     actor.set_autopilot(True, tm_port)
-                    traffic_manager.ignore_lights_percentage(actor, 90)
+                    traffic_manager.ignore_lights_percentage(actor, TL_VIOLATION_PROB)
                     traffic_manager.distance_to_leading_vehicle(actor, 3)
-                    traffic_manager.vehicle_percentage_speed_difference(
-                        actor, -30
-                    )  #  check if this gets overridden by global value
-            # example of how to use parameters
-            traffic_manager.global_percentage_speed_difference(30.0)
+                    if random.random() * 100 < SPEED_VIOLATION_PROB:
+                        traffic_manager.vehicle_percentage_speed_difference(actor, -30)
+
             vehicles_and_lights = [
                 x
                 for x in actors
@@ -247,12 +256,13 @@ def run(client, round_name):
             settings.synchronous_mode = False
             settings.fixed_delta_seconds = None
             world.apply_settings(settings)
-        print("\ndestroying %d actors" % len(actor_list))
-        client.apply_batch_sync(
-            [carla.command.DestroyActor(x) for x in vehicles_list + sensors]
-        )
+        print("\ndestroying %d actors" % (len(sensors) + len(vehicles_list)))
+        # all_agents = sensors + vehicles_list
+        for s in sensors:
+            s.destroy()
+        client.apply_batch_sync([carla.command.DestroyActor(x) for x in vehicles_list])
 
-        # print("Stop recording")
+        print("Stop recording")
         client.stop_recorder()
 
 
@@ -262,8 +272,12 @@ if __name__ == "__main__":
         host = "127.0.0.1"  # IP of the host server (default: 127.0.0.1)
         port = 2000  # TCP port to listen to (default: 2000)",
         client = carla.Client(host, port)
-        for i in range(5):
-            run(client, f"tl_sl2_round_{i}")
+        traffic_light_dir = "tl_sl_recordings"
+        round_names = []
+        for i in range(20):
+            run(client, f"tl_sl_round_{i}", traffic_light_dir)
+            round_names.append(f"tl_sl_round_{i}")
+            # client.reload_world()
     except KeyboardInterrupt:
         pass
     finally:

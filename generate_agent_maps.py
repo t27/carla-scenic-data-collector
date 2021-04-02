@@ -8,15 +8,17 @@ from math import cos, sin, pi
 import os
 from tqdm import tqdm
 from pathlib import Path
+import glob
 
 
 class CarlaCsvParser:
-    def __init__(self, recording_folder, round_name) -> None:
+    def __init__(self, recording_folder, round_name, agent_map_folder) -> None:
         self.round_name = round_name
         self.recording_folder = recording_folder
         print("Loading Dataframe...,", round_name)
         self.df = pd.read_csv(os.path.join(recording_folder, round_name) + ".csv")
         self.df.index.name = "index"
+        self.agent_maps_dir = agent_map_folder
         # breakpoint()
         vehicles = self.df.query('type_id.str.contains("vehicle")', engine="python")
         self.agent_wise_idxs = vehicles.groupby("id").groups
@@ -60,22 +62,22 @@ class CarlaCsvParser:
         frame_df_local[["pos_x", "pos_y"]] = (mat @ xy_hmg.T).T.values[:, :2]
         if save_file:
             # frame_df_local.to_parquet(
-            #     f"agent_maps/{self.round_name}_vehicle_{center_agent_id}_frame_{frame_id}.parquet"
+            #     f"{self.agent_maps_dir}/{self.round_name}_vehicle_{center_agent_id}_frame_{frame_id}.parquet"
             # )
-            Path(f"agent_maps/{self.recording_folder}").mkdir(exist_ok=True)
+            Path(f"{self.agent_maps_dir}/{self.recording_folder}").mkdir(exist_ok=True)
             frame_df_local.to_csv(
-                f"agent_maps/{self.recording_folder}/{self.round_name}_vehicle_{center_agent_id}_frame_{frame_id}.csv.gz",
+                f"{self.agent_maps_dir}/{self.recording_folder}/{self.round_name}_vehicle_{center_agent_id}_frame_{frame_id}.csv.gz",
                 compression="gzip",
             )
 
     def run(self):
-        print("Generating Transforms...")
+        # print("Generating Transforms...")
         self._generate_tf_matrices()
         n_frames = len(self.df.frame_id.unique())
-        n_agents = len(self.df.id.unique())
-        print(f"Total unique frames = {n_frames}. Total Agents = {n_agents}")
-        print(f"Projecting a max of {n_frames*n_agents} agent maps")
-        for agent_id in tqdm(self.agent_wise_idxs):
+        n_agents = len(self.agent_wise_idxs.keys())
+        # print(f"Total unique frames = {n_frames}. Total Agents = {n_agents}")
+        # print(f"Projecting a max of {n_frames*n_agents} agent maps")
+        for agent_id in self.agent_wise_idxs:
             # get all rows containing the agent
             agent_df = self.df.iloc[self.agent_wise_idxs[agent_id]]
             # get frame ids where agent was present
@@ -103,23 +105,41 @@ if __name__ == "__main__":
     # agent transforms and transform the other nearby agents for each agent in each frame,
     # more the agents more the time this step takes
     # rounds = ["round_1","round_2","round_3","round_4"]
-    folder_rounds = [
-        ("debris_avoidance_recordings", "scenario1"),
-        ("oncoming_car_recordings", "scenario1"),
+    # folder_rounds = [
+    #     ("debris_avoidance_recordings", "scenario1"),
+    #     ("oncoming_car_recordings", "scenario1"),
+    # ]
+    print("Generating Agent Maps...")
+    agent_map_folder = "./agent_maps"  # output
+    Path(agent_map_folder).mkdir(exist_ok=True)
+
+    folders = [
+        "debris_avoidance_recordings",
+        "oncoming_car_recordings",
+        "normal_recordings",
+        "tl_sl_recordings",
     ]
     pool = ProcessPoolExecutor(6)
 
-    def job(folder, roundname):
-        converter = CarlaCsvParser(folder, roundname)
+    def job(folder, roundname, agent_map_folder):
+        converter = CarlaCsvParser(folder, roundname, agent_map_folder)
         converter.run()
 
     futures = []
-    for folder, round in folder_rounds:
-        futures.append(pool.submit(job, folder, round))
-
-    for x in as_completed(futures):
+    for folder in folders:
+        rounds = glob.glob(f"{folder}/*.csv")
+        round_names = []
+        Path(f"{agent_map_folder}/{folder}").mkdir(exist_ok=True)
+        for round in rounds:
+            round_name = os.path.split(round)[-1].replace(".csv", "")
+            futures.append(pool.submit(job, folder, round_name, agent_map_folder))
+            round_names.append(round_name)
+        with open(f"{agent_map_folder}/{folder}/round_names.txt", "w") as f:
+            f.write("\n".join(round_names))
+    total = len(futures)
+    for x in tqdm(as_completed(futures), total=total):
         x.result()
-        print("Done")
+        # print("Done")
     # for round in rounds:
     #     converter = CarlaCsvParser("./recordings", round)
     #     converter.run()

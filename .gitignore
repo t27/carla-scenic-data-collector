@@ -1,6 +1,11 @@
 .vscode
 debris_avoidance_recordings
 oncoming_car_recordings
+agent_maps
+normal_recordings
+tl_sl_recordings
+**/wandb
 **/.ipynb_checkpoints
 **/__pycache__
 *.dot
+*.pth

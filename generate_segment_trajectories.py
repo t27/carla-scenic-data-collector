@@ -40,94 +40,108 @@ def get_max_frame_value(folder, round_name):
 
 
 def get_basic_dataframe(
-    rounds=["round_0"], agent_map_folder="../agent_maps", max_agents=100,
+    subfolders=["round_0"], agent_map_folder="../agent_maps", max_agents=100,
 ):
     FRAME_LENGTH = 25  # how long should one unit of the scenario be/ what duration is enough to identify an anomaly
     RADIUS = 15  # how far should we look
     result = []
-    for round_id in rounds:
-        agent_ids = get_agent_ids(agent_map_folder, round_name=round_id)
-        max_frame = get_max_frame_value(agent_map_folder, round_name=round_id)
-        for agent_id in agent_ids:
-            # the below range function samples all non overlapping segments in the recording, can have some smart sampling here
-            for start_index in range(0, max_frame, FRAME_LENGTH):
-                dtw_maps = []
-                if start_index + FRAME_LENGTH > max_frame:
-                    continue
-                gen = GenerateSegmentTrajectories(
-                    round_name=round_id,
-                    agent_id=agent_id,
-                    radius=RADIUS,
-                    start_index=start_index,
-                    frame_length=FRAME_LENGTH,
-                    agent_map_folder="../agent_maps",
-                )
-                gen.generate_basic_frame_level_stats()
-                result.append(gen.basic_frame_df)
-                if len(result) == max_agents:
-                    return result
+    for folder in subfolders:
+        round_name_file = f"{agent_map_folder}/{folder}/round_names.txt"
+        round_agent_map_folder = f"{agent_map_folder}/{folder}"
+        with open(round_name_file) as f:
+            round_names = f.read().split("\n")
+        for round_id in round_names:
+            agent_ids = get_agent_ids(round_agent_map_folder, round_name=round_id)
+            max_frame = get_max_frame_value(round_agent_map_folder, round_name=round_id)
+            for agent_id in agent_ids:
+                # the below range function samples all non overlapping segments in the recording, can have some smart sampling here
+                for start_index in range(0, max_frame, FRAME_LENGTH):
+                    dtw_maps = []
+                    if start_index + FRAME_LENGTH > max_frame:
+                        continue
+                    gen = GenerateSegmentTrajectories(
+                        round_name=round_id,
+                        agent_id=agent_id,
+                        radius=RADIUS,
+                        start_index=start_index,
+                        frame_length=FRAME_LENGTH,
+                        agent_map_folder=round_agent_map_folder,
+                    )
+                    gen.generate_basic_frame_level_stats()
+                    result.append(gen.basic_frame_df)
+                    if len(result) == max_agents:
+                        return result
 
     return result
 
 
 def get_dtw_maps(
-    rounds=[0], agent_map_folder="../agent_maps", max_channels=10, max_dtw_maps=100
+    subfolders=["round_0"],
+    agent_map_folder="../agent_maps",
+    max_channels=10,
+    max_dtw_maps=100,
 ):
     FRAME_LENGTH = 25  # how long should one unit of the scenario be/ what duration is enough to identify an anomaly
     RADIUS = 15  # how far should we look
     dtw_result = []
-    # breakpoint()
-    for round_id in rounds:
-        agent_ids = get_agent_ids(agent_map_folder, round_name=round_id)
-        max_frame = get_max_frame_value(agent_map_folder, round_name=round_id)
-        print("Getting Data for - ", round_id, agent_ids, max_frame)
-        for agent_id in agent_ids:
-            # the below range function samples all non overlapping segments in the recording, can have some smart sampling here
-            for start_index in range(0, max_frame, FRAME_LENGTH):
-                dtw_maps = []
-                if start_index + FRAME_LENGTH > max_frame:
-                    continue
-                # print(start_index, max_frame)
-                # breakpoint()
-                gen = GenerateSegmentTrajectories(
-                    round_name=round_id,
-                    agent_id=agent_id,
-                    radius=RADIUS,
-                    start_index=start_index,
-                    frame_length=FRAME_LENGTH,
-                    agent_map_folder="../agent_maps",
-                )
-                # print(start_index)
-                try:
-                    gen.generate()
-                except Exception as exp:
-                    print("error in generate", exp)
-                    breakpoint()
-                data = gen.get_trajectory_data()
-                for other_agent in data["sorted_agent_ids"]:
-                    if other_agent == agent_id:
+    for folder in subfolders:
+        print(agent_map_folder, folder)
+        round_name_file = f"{agent_map_folder}/{folder}/round_names.txt"
+        round_agent_map_folder = f"{agent_map_folder}/{folder}"
+        with open(round_name_file) as f:
+            round_names = f.read().split("\n")
+        # breakpoint()
+        for round_id in round_names:
+            agent_ids = get_agent_ids(round_agent_map_folder, round_name=round_id)
+            max_frame = get_max_frame_value(round_agent_map_folder, round_name=round_id)
+            print("Getting Data for - ", round_id, agent_ids, max_frame)
+            for agent_id in agent_ids:
+                # the below range function samples all non overlapping segments in the recording, can have some smart sampling here
+                for start_index in range(0, max_frame, FRAME_LENGTH):
+                    dtw_maps = []
+                    if start_index + FRAME_LENGTH > max_frame:
                         continue
-                    if len(dtw_maps) == max_channels:
-                        break  # since sorted_agent_ids is sorted by agent's length, we will get the N longest dtw maps
-                    dist, cost_matrix, acc_cost_matrix, path = dtw(
-                        data["agent_tracks"][agent_id],
-                        data["agent_tracks"][other_agent],
-                        dist=l2_norm,
+                    # print(start_index, max_frame)
+                    # breakpoint()
+                    gen = GenerateSegmentTrajectories(
+                        round_name=round_id,
+                        agent_id=agent_id,
+                        radius=RADIUS,
+                        start_index=start_index,
+                        frame_length=FRAME_LENGTH,
+                        agent_map_folder=round_agent_map_folder,
                     )
-                    dtw_maps.append(np.expand_dims(acc_cost_matrix.T, axis=0))
-                # merge 10 dtw maps and make a 10,w,h tensor here and append to parent data list
-                if len(dtw_maps) > 0:
-                    dtw_tensor = np.vstack(dtw_maps)
-                    if dtw_tensor.shape[0] < max_channels:
-                        # padding missing channels(each channel is one agent-ego pair) with zeros here
-                        pad_size = max_channels - dtw_tensor.shape[0]
-                        pad_obj = np.zeros(
-                            (pad_size, dtw_tensor.shape[1], dtw_tensor.shape[2])
+                    # print(start_index)
+                    try:
+                        gen.generate()
+                    except Exception as exp:
+                        print("error in generate", exp)
+                        breakpoint()
+                    data = gen.get_trajectory_data()
+                    for other_agent in data["sorted_agent_ids"]:
+                        if other_agent == agent_id:
+                            continue
+                        if len(dtw_maps) == max_channels:
+                            break  # since sorted_agent_ids is sorted by agent's length, we will get the N longest dtw maps
+                        dist, cost_matrix, acc_cost_matrix, path = dtw(
+                            data["agent_tracks"][agent_id],
+                            data["agent_tracks"][other_agent],
+                            dist=l2_norm,
                         )
-                        dtw_tensor = np.vstack([dtw_tensor, pad_obj])
-                    dtw_result.append(dtw_tensor)
-                    if len(dtw_result) > max_dtw_maps:
-                        return dtw_result
+                        dtw_maps.append(np.expand_dims(acc_cost_matrix.T, axis=0))
+                    # merge 10 dtw maps and make a 10,w,h tensor here and append to parent data list
+                    if len(dtw_maps) > 0:
+                        dtw_tensor = np.vstack(dtw_maps)
+                        if dtw_tensor.shape[0] < max_channels:
+                            # padding missing channels(each channel is one agent-ego pair) with zeros here
+                            pad_size = max_channels - dtw_tensor.shape[0]
+                            pad_obj = np.zeros(
+                                (pad_size, dtw_tensor.shape[1], dtw_tensor.shape[2])
+                            )
+                            dtw_tensor = np.vstack([dtw_tensor, pad_obj])
+                        dtw_result.append(dtw_tensor)
+                        if len(dtw_result) > max_dtw_maps:
+                            return dtw_result
     return dtw_result
 
 
@@ -143,12 +157,9 @@ class GenerateSegmentTrajectories:
         save_video_file: str = None,
         show_window=True,
     ) -> None:
-        # breakpoint()
-        self.round = round_name  # f"round_{round_number}"
-        # self.round_number = round_number
+        self.round = round_name
         self.agent_id = agent_id
         self.agent_str = f"vehicle_{agent_id}"
-        # breakpoint()
         self.agent_maps = glob.glob(
             f"{agent_map_folder}/{self.round}_{self.agent_str}*.csv.gz"
         )
@@ -173,7 +184,7 @@ class GenerateSegmentTrajectories:
             "Yellow": (0, 180, 180),
         }
         if save_video_file is not None:
-            fourcc = cv2.VideoWriter_fourcc(*"vp80")
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             self.videowriter = cv2.VideoWriter(
                 save_video_file, fourcc, 20.0, self.image_shape
             )
@@ -410,10 +421,22 @@ class GenerateSegmentTrajectories:
         self.sorted_agent_ids.sort(key=lambda x: self.agent_track_len[x], reverse=True)
 
 
-if __name__ == "__main__":
-    # viz = VisualizeAgentMaps(0, 324, 15, save_video_file="test.webm")
-    GenerateSegmentTrajectories(
-        round_number=0, agent_id=324, radius=15, start_index=0, frame_length=25
+def test_visualize():
+    round_name = "scenario1.log"
+    folder = "agent_maps/debris_avoidance_recordings"
+    agent_ids = get_agent_ids(folder, round_name)
+    obj = GenerateSegmentTrajectories(
+        round_name=round_name,
+        agent_id=agent_ids[1],
+        radius=20,
+        start_index=0,
+        frame_length=50,
+        agent_map_folder=folder,
+        save_video_file="testvideo.mp4",
     )
-    # viz.visualize_frames()
+    obj.visualize_frames()
+
+
+if __name__ == "__main__":
+    test_visualize()
 

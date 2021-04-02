@@ -125,7 +125,7 @@ def run(client, round_name, dest_folder="", session_duration_sec=10):
             client.get_world().apply_settings(settings)
         else:
             synchronous_master = False
-        session_recording = f"replay_{round_name}"
+        session_recording = f"{round_name}"
         destination_filename = dest_folder / Path(session_recording)
 
         world.tick()
@@ -209,13 +209,13 @@ def convert_recording(carla_recording, prefix="", dest_folder=""):
 
         client2 = carla.Client(host, port)
         client2.set_timeout(60.0)
+        client2.reload_world()
 
         client2.set_replayer_time_factor(1.0)
         fullpath = pathlib.Path(carla_recording).absolute()
 
         print(client2.replay_file(str(fullpath), 0.0, 0.0, 0,))
-
-        run(client, roundname, dest_folder=dest_folder, session_duration_sec=10)
+        run(client2, roundname, dest_folder=dest_folder, session_duration_sec=10)
     except KeyboardInterrupt:
         pass
     finally:
@@ -224,7 +224,11 @@ def convert_recording(carla_recording, prefix="", dest_folder=""):
 
 if __name__ == "__main__":
 
-    folders = ["oncoming_car_recordings", "debris_avoidance_recordings"]
+    folders = [
+        "oncoming_car_recordings",
+        "debris_avoidance_recordings",
+        "normal_recordings",
+    ]
 
     for folder in folders:
         files = glob.glob(f"./{folder}/*.log")
@@ -232,3 +236,4 @@ if __name__ == "__main__":
             # TODO: identify format of prefix for each diff anomaly
             convert_recording(fil, dest_folder=folder)
 
+    print("All finished")

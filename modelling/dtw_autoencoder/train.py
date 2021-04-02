@@ -24,7 +24,7 @@ params["round_name"] = "round2"
 params["batch_size"] = 4  # 256 * 3
 params["lr"] = 0.0001
 params["momentum"] = 0.9
-params["epochs"] = 400
+params["epochs"] = 800
 params["sched_step_every_n_epochs"] = 2
 params["sched_mult_lr_by_gamma_everystep"] = 0.85
 # tb_writer = SummaryWriter(log_dir=f"runs/{params['round_name']}")
@@ -46,32 +46,12 @@ def main():
 
     # MODEL_FILE= "./epoch_0"
     logging.info("Loading datasets...")
-    # train_dataset = data.get_train_dataset()
-    # dev_dataset = data.get_val_dataset()
-    # logging.info("Loaded Datasets")
-    # train_loader = DataLoader(
-    #     train_dataset,
-    #     batch_size=BATCH_SIZE,
-    #     shuffle=True,
-    #     num_workers=16,
-    #     pin_memory=True,
-    # )
 
-    # dev_loader = DataLoader(
-    #     dev_dataset,
-    #     batch_size=BATCH_SIZE,
-    #     shuffle=False,
-    #     num_workers=16,
-    #     pin_memory=True,
-    # )
     train_loader, dev_loader = dataloader.get_train_test_loaders(
         batch_size=BATCH_SIZE, only_real=True
     )
-    # model = nn.DataParallel(models.PhonemeModel9(context=CONTEXT_SIZE))
-    # model = models.BaseModel(num_classes=4000)
-    # model = resnet_model.ResnetModel(num_classes=4000)
+
     model = nn.DataParallel(ScenarioModel())
-    # model = nn.DataParallel(models.BaseModel3(num_classes=4000))
 
     if torch.cuda.is_available():
         model = model.cuda()

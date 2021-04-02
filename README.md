@@ -44,9 +44,16 @@ Prerequisites(Ubuntu 20.04/18.04)
     - The data will be stored in the relevant recording folders
 3. We can now proceed to use this scenario level data for the modelling tasks
 
+
+# About the anomalous scenarios
+
+1. Debris Avoidance
+2. Oncoming Car
+3. Traffic Light Violation
+4. Speed Limit Violation
 # Modelling Approaches
 
-We include 2 ways to use the data collected in models. The modelling code also includes the data preparation steps. Also, the data preparation code(`generate_agent_maps.py` and `generate_segment_trajectories.py`) currently assumes a set of conventions on the filenames for the recording files.
+We include 2 ways to use the data collected in models. The modelling code also includes the data preparation steps. Also, the data preparation code(`generate_agent_maps.py` and `generate_segment_trajectories.py`) is used in various steps of the modelling. Both the following modelling tasks have some prerequisites on the data, which are described in detail in the modelling subfolder. [Modelling Readme](./modelling/)
 
 ## Random Forest Based Frame Classifier
 
@@ -81,5 +88,5 @@ The model, the dataloader, the training code and the inference code can be found
 
 ## Agent Maps
 
-Also, we can visualize the agent maps separately as well. This visualization is a simple 2D visualization of the agent maps. The `visualize_agent_maps.py` includes all the code to visualize these agent maps. 
+Also, we can visualize the agent maps separately as well. This visualization is a simple 2D visualization of the agent maps. The `visualize_agent_maps.py` includes all the code to visualize these agent maps.
 By default the code will popup a window showing the visualization and also store a video in the current directory.

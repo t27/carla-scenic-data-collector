@@ -1,7 +1,9 @@
 import sys
 
-sys.path.insert(0, "..")
-sys.path.insert(0, "../..")
+import pathlib
+
+# need this to ensure the import works properly
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent.absolute()))
 
 from generate_segment_trajectories import get_dtw_maps
 
@@ -9,19 +11,27 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
-normal_rounds = ["round_0"]  # , "round_1", "round_2", "round_3", "round_4"]
-anomalous_rounds = [
-    # ["debris_round2"]
-    # "tl_sl2_round_0",
-    # "tl_sl2_round_1",
-    # "tl_sl2_round_2",
-    "tl_sl_round_0",
-    "tl_sl_round_1",
-    "tl_sl_round_2",
-    "tl_sl_round_3",
+# normal_rounds = ["round_0"]  # , "round_1", "round_2", "round_3", "round_4"]
+# anomalous_rounds = [
+#     # ["debris_round2"]
+#     # "tl_sl2_round_0",
+#     # "tl_sl2_round_1",
+#     # "tl_sl2_round_2",
+#     "tl_sl_round_0",
+#     "tl_sl_round_1",
+#     "tl_sl_round_2",
+#     "tl_sl_round_3",
+# ]
+
+base_agent_map_folder = "agent_maps"
+normal_folder = ["normal_recordings"]
+anomalous_folders = [
+    "oncoming_car_recordings",
+    "tl_sl_recordings",
+    "debris_avoidance_recordings",
 ]
-anomalous_len = 1000  # 426  # number of scenarios for a 25 frame segment
-max_real_len = 1000
+anomalous_len = 2000  # 426  # number of scenarios for a 25 frame segment
+max_real_len = 2000
 num_channels = 10
 means = [0.5 for i in range(num_channels)]
 stds = [0.5 for i in range(num_channels)]
@@ -48,7 +58,9 @@ def get_anomalous_train_test_loaders(batch_size=32, train_ratio=0.7):
     train_count = int(train_ratio * anomalous_data_count)
     test_count = anomalous_data_count - train_count
     anomalous_data = get_dtw_maps(
-        rounds=anomalous_rounds, max_dtw_maps=anomalous_data_count
+        agent_map_folder=base_agent_map_folder,
+        subfolders=anomalous_folders,
+        max_dtw_maps=anomalous_data_count,
     )
     train_dataset = DtwDataset(anomalous_data[:train_count])
     dev_dataset = DtwDataset(anomalous_data[train_count:])
@@ -79,7 +91,11 @@ def get_real_train_test_loaders(batch_size=32, train_ratio=0.7, max_len=None):
         real_data_count = max_len
     train_count = int(train_ratio * real_data_count)
     test_count = real_data_count - train_count
-    real_data = get_dtw_maps(rounds=normal_rounds, max_dtw_maps=real_data_count)
+    real_data = get_dtw_maps(
+        agent_map_folder=base_agent_map_folder,
+        subfolders=normal_folder,
+        max_dtw_maps=real_data_count,
+    )
     train_dataset = DtwDataset(real_data[:train_count])
     dev_dataset = DtwDataset(real_data[train_count:])
 
@@ -114,10 +130,16 @@ def get_train_test_loaders(batch_size=32, train_ratio=0.7, only_real=False):
         train_count = int(train_ratio * anomalous_data_count)
 
     test_count = anomalous_data_count - train_count
-    real_data = get_dtw_maps(rounds=normal_rounds, max_dtw_maps=anomalous_data_count)
+    real_data = get_dtw_maps(
+        agent_map_folder=base_agent_map_folder,
+        subfolders=normal_folder,
+        max_dtw_maps=anomalous_data_count,
+    )
     if not only_real:
         anomalous_data = get_dtw_maps(
-            rounds=anomalous_rounds, max_dtw_maps=anomalous_data_count
+            agent_map_folder=base_agent_map_folder,
+            subfolders=anomalous_folders,
+            max_dtw_maps=anomalous_data_count,
         )
         train_dataset = DtwDataset(
             real_data[:train_count] + anomalous_data[:train_count]
@@ -130,7 +152,7 @@ def get_train_test_loaders(batch_size=32, train_ratio=0.7, only_real=False):
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=16,
+        num_workers=0,
         pin_memory=True,
     )
 
@@ -138,7 +160,7 @@ def get_train_test_loaders(batch_size=32, train_ratio=0.7, only_real=False):
         dev_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=16,
+        num_workers=0,
         pin_memory=True,
     )
 
