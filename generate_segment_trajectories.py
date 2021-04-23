@@ -46,10 +46,12 @@ def get_basic_dataframe(
     RADIUS = 15  # how far should we look
     result = []
     for folder in subfolders:
+        print(f"Processing {folder}")
         round_name_file = f"{agent_map_folder}/{folder}/round_names.txt"
         round_agent_map_folder = f"{agent_map_folder}/{folder}"
         with open(round_name_file) as f:
             round_names = f.read().split("\n")
+        round_result = []
         for round_id in round_names:
             agent_ids = get_agent_ids(round_agent_map_folder, round_name=round_id)
             max_frame = get_max_frame_value(round_agent_map_folder, round_name=round_id)
@@ -67,10 +69,13 @@ def get_basic_dataframe(
                         frame_length=FRAME_LENGTH,
                         agent_map_folder=round_agent_map_folder,
                     )
-                    gen.generate_basic_frame_level_stats()
-                    result.append(gen.basic_frame_df)
-                    if len(result) == max_agents:
+                    if gen.generate_basic_frame_level_stats():
+                        round_result.append(gen.basic_frame_df)
+                    if (len(result) + len(round_result)) >= max_agents:
+                        result = result + round_result
                         return result
+            breakpoint()
+            result = result + round_result
 
     return result
 
@@ -94,7 +99,7 @@ def get_dtw_maps(
         for round_id in round_names:
             agent_ids = get_agent_ids(round_agent_map_folder, round_name=round_id)
             max_frame = get_max_frame_value(round_agent_map_folder, round_name=round_id)
-            print("Getting Data for - ", round_id, agent_ids, max_frame)
+            # print("Getting Data for - ", round_id, agent_ids, max_frame)
             for agent_id in agent_ids:
                 # the below range function samples all non overlapping segments in the recording, can have some smart sampling here
                 for start_index in range(0, max_frame, FRAME_LENGTH):
@@ -290,16 +295,26 @@ class GenerateSegmentTrajectories:
         }
 
     def generate_basic_frame_level_stats(self):
+        ### Returns true if successful, false otherwise
         ### Each row of the basic frame level stats includes information about one frame wrt other agents
         i = self.start_index
         df_array = []
+        if len(self.agent_maps) == 0:
+            print(f"No agent maps for {self.agent_id}")
+            return False
         # load the dataframes from the multiple files(one file per frame_id, agent_id pair)
         for k in range(self.frame_length):  # segment length
             frame_id = i + k
-            # print(frame_id)
-            df = pd.read_csv(self.agent_maps[frame_id], compression="gzip")
-            df = df.query(f"abs(pos_x)<{self.radius} & abs(pos_y)<{self.radius}")
-            df_array.append(df)
+            # print(frame_id)frame_id
+            try:
+                df = pd.read_csv(self.agent_maps[frame_id], compression="gzip")
+                df = df.query(f"abs(pos_x)<{self.radius} & abs(pos_y)<{self.radius}")
+                df_array.append(df)
+            except Exception as e:
+                print(f"Faced Exception:{e}")
+                print(
+                    f"Current frame id:{frame_id}, Agent map count: {len(self.agent_maps)}, Start index:{self.start_index}, Frame Length: {self.frame_length}"
+                )
         # merge all dataframes together
         self.df_merged = pd.concat(df_array).reset_index()
         frame_grp = self.df_merged.groupby("frame_id")
@@ -321,6 +336,7 @@ class GenerateSegmentTrajectories:
             stats = self._calculate_frame_stats(frame_id_wise_df[frame_id], frame_id)
             result.append(stats)
         self.basic_frame_df = pd.DataFrame(result, columns=column_names)
+        return True
 
     def _calculate_frame_stats(self, frame_df, frame_id):
         frame_id = frame_id
@@ -378,6 +394,7 @@ class GenerateSegmentTrajectories:
                 print(
                     f"Trying to access frame {frame_id} but only have {len(self.agent_maps)}"
                 )
+                # breakpoint()
                 break
             df = pd.read_csv(self.agent_maps[frame_id], compression="gzip")
             df = df.query(f"abs(pos_x)<{self.radius} & abs(pos_y)<{self.radius}")

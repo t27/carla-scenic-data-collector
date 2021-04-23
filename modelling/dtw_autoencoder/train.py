@@ -10,6 +10,11 @@ from tqdm import tqdm
 import dataloader
 import wandb
 from model import ScenarioModel
+from random_seed import RANDOM_SEED
+
+
+np.random.seed(RANDOM_SEED)
+torch.manual_seed(RANDOM_SEED)
 
 USE_WANDB = True
 
@@ -47,6 +52,7 @@ def main():
     # MODEL_FILE= "./epoch_0"
     logging.info("Loading datasets...")
 
+    # only_real=True ensures that we only take the nominal data and not the anomalous one
     train_loader, dev_loader = dataloader.get_train_test_loaders(
         batch_size=BATCH_SIZE, only_real=True
     )
@@ -74,7 +80,7 @@ def main():
     logging.info("Starting Training")
     running_loss = 0
     for epoch in range(num_epochs):
-        print("Epoch:", epoch, "LR:", sched.get_last_lr())
+        logging.info(f"Epoch:{epoch} LR:{sched.get_last_lr()}")
         # wandb.log({"CurrLR": sched.get_last_lr(), "Epoch": epoch})
         train_acc = train(
             train_loader, model, criterion, optimizer, epoch, running_loss

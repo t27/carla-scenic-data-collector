@@ -9,6 +9,7 @@ import os
 from tqdm import tqdm
 from pathlib import Path
 import glob
+import click
 
 
 class CarlaCsvParser:
@@ -100,7 +101,15 @@ class CarlaCsvParser:
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-if __name__ == "__main__":
+
+def job(folder, roundname, agent_map_folder):
+    converter = CarlaCsvParser(folder, roundname, agent_map_folder)
+    converter.run()
+
+
+@click.command()
+@click.option("--test", is_flag=True)
+def main(test):
     # This step is pretty long, takes a few hours per round as we pre calculate all the
     # agent transforms and transform the other nearby agents for each agent in each frame,
     # more the agents more the time this step takes
@@ -116,17 +125,15 @@ if __name__ == "__main__":
     folders = [
         "debris_avoidance_recordings",
         "oncoming_car_recordings",
-        "normal_recordings",
+        "nominal_recordings",
         "tl_sl_recordings",
     ]
-    pool = ProcessPoolExecutor(6)
-
-    def job(folder, roundname, agent_map_folder):
-        converter = CarlaCsvParser(folder, roundname, agent_map_folder)
-        converter.run()
+    pool = ProcessPoolExecutor(12)
 
     futures = []
     for folder in folders:
+        if test:
+            folder = f"test_{folder}"
         rounds = glob.glob(f"{folder}/*.csv")
         round_names = []
         Path(f"{agent_map_folder}/{folder}").mkdir(exist_ok=True)
@@ -144,3 +151,6 @@ if __name__ == "__main__":
     #     converter = CarlaCsvParser("./recordings", round)
     #     converter.run()
 
+
+if __name__ == "__main__":
+    main()

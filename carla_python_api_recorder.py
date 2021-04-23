@@ -18,16 +18,7 @@ import math
 import spawn
 
 try:
-    sys.path.append(
-        glob.glob(
-            "../carla/dist/carla-*%d.%d-%s.egg"
-            % (
-                sys.version_info.major,
-                sys.version_info.minor,
-                "win-amd64" if os.name == "nt" else "linux-x86_64",
-            )
-        )[0]
-    )
+    sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
 except IndexError:
     pass
 
@@ -37,7 +28,7 @@ import argparse
 import random
 import time
 import logging
-
+import click
 import pathlib
 
 current_dir = pathlib.Path(__file__).parent.absolute()
@@ -133,10 +124,17 @@ def attach_collision_sensor(actor, world):
     return collision_sensor
 
 
-def run(client, round_name, recording_dir):
-
-    num_vehicles = 40
-    safe = True  # avoid spawning vehicles prone to accidents"
+def run(
+    client,
+    round_name,
+    recording_dir,
+    speed_violation_prob=60,
+    tl_violation_prob=70,
+    perc_speed_diff=-30,
+    num_vehicles=25,
+    SESSION_DURATION=60,
+):
+    safe = True  # avoid spawning vehicles whose geometry is not ideal for carla
 
     actor_list = []
     sensors = []
@@ -144,14 +142,9 @@ def run(client, round_name, recording_dir):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
 
     try:
-        SESSION_DURATION = 50  # seconds
         FPS = 5
         DELTA_T = 1 / FPS
 
-        # how likely is a vehicle to violate
-        SPEED_VIOLATION_PROB = 60
-        TL_VIOLATION_PROB = 70
-        # client.set_timeout(2.0)
         world = client.get_world()
         blueprints = world.get_blueprint_library().filter("vehicle.*")
         traffic_manager = client.get_trafficmanager()
@@ -170,7 +163,7 @@ def run(client, round_name, recording_dir):
         recording_dir_path.mkdir(exist_ok=True)
         session_recording = str(recording_dir_path / f"{round_name}.csv")
         carla_session_recording = str(
-            recording_dir_path / f"{round_name}_carla_recording"
+            recording_dir_path.absolute() / f"{round_name}_carla_recording"
         )
         print("Recording on file: %s" % client.start_recorder(carla_session_recording))
         vehicles_list, walkers_list, all_actors = spawn.spawn(
@@ -220,10 +213,12 @@ def run(client, round_name, recording_dir):
                     # print(actor.type_id)
                     tm_port = traffic_manager.get_port()
                     actor.set_autopilot(True, tm_port)
-                    traffic_manager.ignore_lights_percentage(actor, TL_VIOLATION_PROB)
+                    traffic_manager.ignore_lights_percentage(actor, tl_violation_prob)
                     traffic_manager.distance_to_leading_vehicle(actor, 3)
-                    if random.random() * 100 < SPEED_VIOLATION_PROB:
-                        traffic_manager.vehicle_percentage_speed_difference(actor, -30)
+                    if random.random() * 100 < speed_violation_prob:
+                        traffic_manager.vehicle_percentage_speed_difference(
+                            actor, perc_speed_diff
+                        )
 
             vehicles_and_lights = [
                 x
@@ -240,7 +235,7 @@ def run(client, round_name, recording_dir):
         df = pd.DataFrame(df_arr, columns=df_columns)
         pbar.close()
         print(f"Saving CSV({len(df.frame_id.unique())} frames)")
-        # df.to_parquet("session_data.parquet")
+        # df.to_parquet(f"session_data.parquet")
         df.to_csv(session_recording, index=False)
         world.tick()
         # if args.recorder_time > 0:
@@ -266,19 +261,60 @@ def run(client, round_name, recording_dir):
         client.stop_recorder()
 
 
-if __name__ == "__main__":
+@click.command()
+@click.option(
+    "-s",
+    "--scenario_type",
+    type=click.Choice(["tl_sl", "nominal"], case_sensitive=False),
+    required=True,
+)
+@click.option("-n", "--num_rounds", default=100)
+@click.option("--test", is_flag=True)
+def main(scenario_type, num_rounds, test):
+    # print(scenario_type, test, num_rounds)
+    if test:
+        random.seed(72)
 
+    if scenario_type.lower() == "tl_sl":
+        SPEED_VIOLATION_PROB = 60
+        TL_VIOLATION_PROB = 70
+        PERC_SPEED_DIFF = -30
+        SCENARIO_NAME = "tl_sl"
+        # NUM_ROUNDS = 100
+    elif scenario_type.lower() == "nominal":
+        SPEED_VIOLATION_PROB = 0
+        TL_VIOLATION_PROB = 0
+        PERC_SPEED_DIFF = 0
+        SCENARIO_NAME = "nominal"
+        # NUM_ROUNDS = 200
+    NUM_ROUNDS = num_rounds
+    print(f"Recording {SCENARIO_NAME} data")
     try:
         host = "127.0.0.1"  # IP of the host server (default: 127.0.0.1)
         port = 2000  # TCP port to listen to (default: 2000)",
         client = carla.Client(host, port)
-        traffic_light_dir = "tl_sl_recordings"
+        if test:
+            scenario_dir = f"test_{SCENARIO_NAME}_recordings"
+        else:
+            scenario_dir = f"{SCENARIO_NAME}_recordings"
+
         round_names = []
-        for i in range(20):
-            run(client, f"tl_sl_round_{i}", traffic_light_dir)
-            round_names.append(f"tl_sl_round_{i}")
+        for i in range(NUM_ROUNDS):
+            run(
+                client,
+                f"{scenario_type}_round_{i}",
+                scenario_dir,
+                SPEED_VIOLATION_PROB,
+                TL_VIOLATION_PROB,
+                PERC_SPEED_DIFF,
+            )
+            round_names.append(f"{scenario_type}_round_{i}")
             # client.reload_world()
     except KeyboardInterrupt:
         pass
     finally:
         print("\ndone.")
+
+
+if __name__ == "__main__":
+    main()

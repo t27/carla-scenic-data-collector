@@ -8,8 +8,15 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent.absolute()))
 from generate_segment_trajectories import get_dtw_maps
 
 import torch
+import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+from random_seed import RANDOM_SEED
+
+
+np.random.seed(RANDOM_SEED)
+torch.manual_seed(RANDOM_SEED)
+
 
 # normal_rounds = ["round_0"]  # , "round_1", "round_2", "round_3", "round_4"]
 # anomalous_rounds = [
@@ -24,13 +31,13 @@ from torchvision import transforms
 # ]
 
 base_agent_map_folder = "agent_maps"
-normal_folder = ["normal_recordings"]
+normal_folder = ["nominal_recordings"]
 anomalous_folders = [
     "oncoming_car_recordings",
-    "tl_sl_recordings",
     "debris_avoidance_recordings",
+    "tl_sl_recordings",
 ]
-anomalous_len = 2000  # 426  # number of scenarios for a 25 frame segment
+anomalous_len = 2000  # max number of scenarios for a 25 frame segment
 max_real_len = 2000
 num_channels = 10
 means = [0.5 for i in range(num_channels)]
@@ -53,8 +60,12 @@ class DtwDataset(Dataset):
         return self.transforms(torch.tensor(self.data[index]))
 
 
-def get_anomalous_train_test_loaders(batch_size=32, train_ratio=0.7):
-    anomalous_data_count = anomalous_len  # since normal count is greater that anomalous, calculate the splits based on the anomalous data
+# used in inferer
+def get_anomalous_train_test_loaders(batch_size=32, train_ratio=0.7, max_len=None):
+    if max_len is None:
+        anomalous_data_count = anomalous_len  # since normal count is greater that real, calculate the splits based on the real data
+    else:
+        anomalous_data_count = max_len
     train_count = int(train_ratio * anomalous_data_count)
     test_count = anomalous_data_count - train_count
     anomalous_data = get_dtw_maps(
@@ -62,6 +73,8 @@ def get_anomalous_train_test_loaders(batch_size=32, train_ratio=0.7):
         subfolders=anomalous_folders,
         max_dtw_maps=anomalous_data_count,
     )
+    np.save("anomalous_train_dtw_raw.npy", anomalous_data[:train_count])
+    np.save("anomalous_dev_dtw_raw.npy", anomalous_data[train_count:])
     train_dataset = DtwDataset(anomalous_data[:train_count])
     dev_dataset = DtwDataset(anomalous_data[train_count:])
 
@@ -84,6 +97,7 @@ def get_anomalous_train_test_loaders(batch_size=32, train_ratio=0.7):
     return train_loader, dev_loader
 
 
+# used in inferer
 def get_real_train_test_loaders(batch_size=32, train_ratio=0.7, max_len=None):
     if max_len is None:
         real_data_count = max_real_len  # since normal count is greater that real, calculate the splits based on the real data
@@ -91,11 +105,16 @@ def get_real_train_test_loaders(batch_size=32, train_ratio=0.7, max_len=None):
         real_data_count = max_len
     train_count = int(train_ratio * real_data_count)
     test_count = real_data_count - train_count
+    # breakpoint()
     real_data = get_dtw_maps(
         agent_map_folder=base_agent_map_folder,
         subfolders=normal_folder,
         max_dtw_maps=real_data_count,
     )
+
+    np.save("real_train_dtw_raw.npy", real_data[:train_count])
+    np.save("real_dev_dtw_raw.npy", real_data[train_count:])
+    # len(real_data) may be less than real_data_count
     train_dataset = DtwDataset(real_data[:train_count])
     dev_dataset = DtwDataset(real_data[train_count:])
 
@@ -120,6 +139,7 @@ def get_real_train_test_loaders(batch_size=32, train_ratio=0.7, max_len=None):
 
 # len(anomalous)
 # 426
+# Used in the training code
 def get_train_test_loaders(batch_size=32, train_ratio=0.7, only_real=False):
 
     if not only_real:
@@ -135,6 +155,7 @@ def get_train_test_loaders(batch_size=32, train_ratio=0.7, only_real=False):
         subfolders=normal_folder,
         max_dtw_maps=anomalous_data_count,
     )
+    # breakpoint()
     if not only_real:
         anomalous_data = get_dtw_maps(
             agent_map_folder=base_agent_map_folder,

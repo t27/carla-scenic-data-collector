@@ -14,6 +14,7 @@ model scenic.simulators.carla.model #located in scenic/simulators/carla/model.sc
 ## CONSTANTS
 MAX_BREAK_THRESHOLD = 1
 SAFETY_DISTANCE = 15
+LIGHT_DIST = 5
 BYPASS_DIST = 18
 CAR_SPEED = 7
 roads = network.roads
@@ -25,12 +26,16 @@ behavior CollisionAvoidance():
 behavior NormalCarBehavior():
     try:
         do FollowLaneBehavior(CAR_SPEED)
-    interrupt when withinDistanceToAnyObjs(self, SAFETY_DISTANCE):
-        do CollisionAvoidance()
+    interrupt when withinDistanceToRedYellowTrafficLight(self,LIGHT_DIST):
+        while withinDistanceToRedYellowTrafficLight(self, LIGHT_DIST):
+            take SetBrakeAction(MAX_BREAK_THRESHOLD)
+ #   interrupt when withinDistanceToObjsInLane(self, SAFETY_DISTANCE):
+ #       while withinDistanceToObjsInLane(self, SAFETY_DISTANCE):
+ #           take SetBrakeAction(MAX_BREAK_THRESHOLD)
+    
 
 # make sure to put '*' to uniformly randomly select from all elements of the list of roads
 select_road = Uniform(*roads)
-# in roads.py, the 'class Road' contains 'lanes' which is a list of lanes whose rightmost lane is indexed 0
 ego_lane = select_road.lanes[0]
 
 start = OrientedPoint on ego_lane.centerline
@@ -39,11 +44,10 @@ ego = Car at start,
 
 
 for i in range(10):
-    # make sure to put '*' to uniformly randomly select from all elements of the list of roads
     select_road2 = Uniform(*roads)
-    # in roads.py, the 'class Road' contains 'lanes' which is a list of lanes whose rightmost lane is indexed 0
     ego_lane2 = select_road2.lanes[0]
 
     start = OrientedPoint on ego_lane2.centerline
     Car at start,
         with behavior NormalCarBehavior()
+

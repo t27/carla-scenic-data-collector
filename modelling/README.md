@@ -14,7 +14,7 @@ To run the preliminary dataprep process, follow the following steps.
 
 ## Frame Classifier
 
-This is a Random Forest based classifier model that runs on a set of precalculated features. Each scenario includes data for each "frame". A frame is the the data for a given timestamp. Each frame contains multiple agents and their positions, velocities etc.
+This is a Random Forest based classifier model that runs on a set of precalculated features. Each scenario includes data for each "frame". A frame is the the data for a given timestamp. Each frame contains multiple agents and their positions, velocities etc. For we use the data for each scenario in the perspective of all vehicles in the scenario. A scenario with 5 vehicles will result in 5 different scenarios when we consider each vehicle to be the "ego" vehicle.
 
 For extracting features for the Random Forest model, for each frame we identify the minimum and maximum values of acceleration, velocity, angular velocity in each of the 3 directions(x, y, z in the global frame). We use these as the features for our simple classification models. The features are - `"max_velocity_x", "max_velocity_y", "max_velocity_z", "max_ang_velocity_x", "max_ang_velocity_y", "max_ang_velocity_z", "min_velocity_x", "min_velocity_y", "min_velocity_z", "min_ang_velocity_x", "min_ang_velocity_y", "min_ang_velocity_z", "max_acc_x", "max_acc_y", "max_acc_z", "min_acc_x", "min_acc_y", "min_acc_z"`.
 
@@ -24,6 +24,7 @@ To run this classifier, run the following commands from the *root folder*
 2. `python modelling/frame_classifier/run.py`
 3. This will train a random forest classifier and also print the results. It will also show the permutation importance plots for the model. Refer to the individual function calls inside `frame_classifier/run.py` for an example on how to use the generated model. You may write your own "run" file to either save the model or even infer on another dataset.
 
+The "Fast" and simple version of this(includes the dataprep on the raw recordings), is available in `simple_frame_classifier.py`. This file does not consider the transformations and the ego vehicle "vicinity" filtering, hence, in a way, is a "privileged" classifier which gives extremely high accuracy.
 
 ## DTW Autoencoder
 
@@ -38,3 +39,4 @@ To train the Autoencoder, we run the following steps,
 1. Ensure the Preliminary Dataprep steps are completed
 2. `python modelling/dtw_autoencoder/train.py` - This will train the DTW model and save the model checkpoints.
 3. Use the autoencoder's "encoder" to return an embedding for a given scenario (using the `ScenarioModel`'s `embedding()` function.) This embedding can further be used for clustering or even training a supervised model
+4. The supervised model is available in `playground/embedding_classifier.ipynb`. This shows 2 examples, including a t-SNE + NN classifier and a simple NN classifier on the 1024 dimension embedding

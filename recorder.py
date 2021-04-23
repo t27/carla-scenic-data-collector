@@ -23,12 +23,10 @@ except IndexError:
 
 import carla
 
-import argparse
-import random
-import time
 import logging
 
 import pathlib
+import click
 
 current_dir = pathlib.Path(__file__).parent.absolute()
 
@@ -222,18 +220,27 @@ def convert_recording(carla_recording, prefix="", dest_folder=""):
         print("\ndone.")
 
 
-if __name__ == "__main__":
+@click.command()
+@click.option("--test", is_flag=True)
+def main(test):
 
     folders = [
         "oncoming_car_recordings",
         "debris_avoidance_recordings",
-        "normal_recordings",
+        # "tl_sl_recordings", # using the carla python api for this
+        # "normal_recordings",  # using the carla python api for this
     ]
 
     for folder in folders:
+        if test:
+            folder = f"test_{folder}"
         files = glob.glob(f"./{folder}/*.log")
         for fil in files:
             # TODO: identify format of prefix for each diff anomaly
             convert_recording(fil, dest_folder=folder)
 
     print("All finished")
+
+
+if __name__ == "__main__":
+    main()

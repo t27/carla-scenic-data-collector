@@ -43,8 +43,24 @@ Prerequisites(Ubuntu 20.04/18.04)
 2. From the current project folder, run `record_data.sh` 
     - The data will be stored in the relevant recording folders
 3. We can now proceed to use this scenario level data for the modelling tasks
+4. The baseline modelling tasks below involve additional steps after this, refer to the [Modelling Readme](./modelling/)
+
+# About the Recorded data
+
+We provide Scenic files for 2 scenarios and provide Carla python APIs based recorders for the rest. We found some issues with the reliability of the Autopilot while running Scenic scenarios hence chose to use the native CARLA scripts for any scenarios that need the Autopilot.
+
+We also provide CARLA log files from the native [CARLA recorder](https://carla.readthedocs.io/en/latest/adv_recorder/#recorder) which allow us to replay the scenario again in CARLA.
+
+The recorder we provide(in `recorder.py` and `carla_python_api_recorder.py`) currently extracts the following features for each vehicle or traffic light in the frame. We also store the static elements of the map(signs, props etc) in the data for `frame 0` since those elements wont change over the execution of the scenario.
 
 
+```
+frame_id, id, type_id, pos_x, pos_y, pos_z, roll, pitch, yaw, velocity_x, velocity_y, velocity_z, acc_x, acc_y, acc_z, angular_vel_x, angular_vel_y, angular_vel_z, bbox3d_offset_x, bbox3d_offset_y, bbox3d_offset_z, bbox3d_extent_x, bbox3d_extent_y, bbox3d_extent_z, traffic_light_state,
+```
+
+The `id` refers to the unique vehicle id in the current scene. There is no meaning to the absolute value of the `id` and the order as such, but the `id` is preserved across each frame. The `bbox3d` offset(location) and extent values are related to the enclosing box of the vehicle or traffic light(The definitions are found [here](https://carla.readthedocs.io/en/latest/python_api/#carlaboundingbox)).
+
+**The user is NOT limited to using just these features, these are just provided for reference. The user is encouraged to run the scenario(either the Scenic files or the Carla logs) in CARLA and choose their own set of features from the scenarios.**
 # About the anomalous scenarios
 
 1. Debris Avoidance

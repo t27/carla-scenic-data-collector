@@ -73,39 +73,15 @@ behavior EgoBehavior(speed=10):
 # make sure to put '*' to uniformly randomly select from all elements of the list of roads
 select_road = Uniform(*roads)
 
-# in roads.py, the 'class Road' contains 'lanes' which is a list of lanes whose rightmost lane is indexed 0
 ego_lane = select_road.lanes[0]
 
 ego = Car on ego_lane.centerline,
         with behavior EgoBehavior(speed=EGO_SPEED)
 
-
-# can also use "Prop" here
+# can also use "Prop" or "Debris" instead of Trash here
 debris1 = Trash following roadDirection for Range(16, 25)
-#debris2 = Debris following roadDirection from debris1 for Range(5, 10)
-#debris3 = Trash following roadDirection from debris2 for Range(5, 10)
 require (distance to intersection) > 50
 require (debris1.laneSection._fasterLane is not None)
-
-number_of_agents = 5
-
-# #TODO Spawn vehicles in nearby lanes instead of randomly
-# background_vehicles = []
-# valid = True
-# for _ in range(number_of_agents):
-#     lane = Uniform(*network.lanes)
-#     if lane is ego_lane:
-#         print("same lane")
-#         continue
-#     spot = OrientedPoint on lane.centerline
-#     background_car = Car at spot,
-#         with behavior AutopilotBehavior()
-#     #assert (distance from background_car to ego) < 2000
-#     #assert ego.lane != background_car.lane
-#     background_vehicles.append(background_car)
-
-# for bg_car in background_vehicles:
-#     require bg_car can see ego
 
 #TODO Spawn vehicles in nearby lanes instead of randomly
 valid = True

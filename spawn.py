@@ -49,6 +49,7 @@ def spawn(client, world, number_of_vehicles, number_of_walkers=0, safe=False):
             ]
             blueprints = [x for x in blueprints if not x.id.endswith("isetta")]
             blueprints = [x for x in blueprints if not x.id.endswith("carlacola")]
+            blueprints = [x for x in blueprints if not x.id.endswith("cybertruck")]
 
         spawn_points = world.get_map().get_spawn_points()
         number_of_spawn_points = len(spawn_points)
