@@ -74,7 +74,7 @@ def get_basic_dataframe(
                     if (len(result) + len(round_result)) >= max_agents:
                         result = result + round_result
                         return result
-            breakpoint()
+            # breakpoint()
             result = result + round_result
 
     return result

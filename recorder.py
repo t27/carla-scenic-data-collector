@@ -16,8 +16,13 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 
+CARLA_VERSION = "0.9.11"
 try:
-    sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+    # sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+    if CARLA_VERSION == "0.9.9":
+        sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+    elif CARLA_VERSION == "0.9.11":
+        sys.path.append("./libs/carla-0.9.11-py3.7-linux-x86_64.egg")
 except IndexError:
     pass
 
@@ -236,7 +241,6 @@ def main(test):
             folder = f"test_{folder}"
         files = glob.glob(f"./{folder}/*.log")
         for fil in files:
-            # TODO: identify format of prefix for each diff anomaly
             convert_recording(fil, dest_folder=folder)
 
     print("All finished")

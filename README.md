@@ -5,7 +5,7 @@
 
 Prerequisites(Ubuntu 20.04/18.04)
 
-1. Install [Carla 0.9.9.4](https://github.com/carla-simulator/carla/releases/tag/0.9.9) ([direct download](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.9.4.tar.gz)) (newer versions should work too, but the code is tested with 0.9.9.4)
+1. Install ~~[Carla 0.9.9.4](https://github.com/carla-simulator/carla/releases/tag/0.9.9) ([direct download](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.9.4.tar.gz)) (newer versions should work too, but the code is tested with 0.9.9.4)~~ As of July 2021, the system is updated to use [Carla 0.9.11](https://github.com/carla-simulator/carla/releases/tag/0.9.11) ([direct link](https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.11.tar.gz))
     1. Use the tar.gz instead of the `apt` method to ensure we can access the carla/PythonAPI folder without changing too many permissions
 2. Python environment
     1. Python 3.8
@@ -14,11 +14,20 @@ Prerequisites(Ubuntu 20.04/18.04)
         1. `pip install -r requirements.txt`
     4. For the modelling section, use the requirements file in the `modelling` folder
 
+<details>
+  <summary>Note(July 2021)</summary>
+  
+As of Jul 2021, we have upgraded and moved to using Carla 0.9.11. The results and the data generated is mostly similar to Carla 0.9.9. The main advantage that we get in the newer version is a deterministic Traffic Manager, which ensures that the Traffic Light Violation, Speed Limit Violation and Nominal Scenario data is deterministically reproducible.
+
+</details>
+
+
+
 # Description of the files
 
 1. Scenic scenes
     - `debris.scenic` - Builds a scenic scenario for a debris avoidance scenario. Also adds one spectator vehicle.
-    - `opposing_car.scenic` - - Builds a scenic scenario for a scenario where the ego is facing an oncoming car(which is violating lane rules). Also adds one spectator vehicle.
+    - `oncoming_car.scenic` - - Builds a scenic scenario for a scenario where the ego is facing an oncoming car(which is violating lane rules). Also adds one spectator vehicle.
     - `platoon.scenic` - A basic platoon/convoy scenario. This file just sets up the scene, no specific behavior has been added yet.
 
 2. Runners - bash files

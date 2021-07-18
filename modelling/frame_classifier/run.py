@@ -26,6 +26,7 @@ def main(test):
     global normal_folder
     global anomalous_folders
     if test:
+        print("Test Dataset Mode")
         normal_folder = [f"test_{r}" for r in normal_folder]
         anomalous_folders = [f"test_{r}" for r in anomalous_folders]
 
@@ -49,8 +50,9 @@ def main(test):
         data=(X_train, X_test, y_train, y_test),
     )
     print("RandomForest Results:", score)
-    show_permutation_imp(model, X_train, y_train)
-    show_permutation_imp(model, X_test, y_test)
+    # Uncomment the below 2 lines to see permutation invariance plots
+    # show_permutation_imp(model, X_train, y_train)
+    # show_permutation_imp(model, X_test, y_test)
     # breakpoint()
 
 

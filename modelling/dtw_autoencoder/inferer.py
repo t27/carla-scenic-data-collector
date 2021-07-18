@@ -61,15 +61,24 @@ def run(modelpath="epoch_400.pth"):
 
     print("Generating Anomalous vectors...")
     anomalous_vectors = infer_and_get_embeddings(anomalous_dev_loader, inferer)
-    np.save("anomalous_embeddings.npy", anomalous_vectors)
+    np.save("anomalous_dev_embeddings.npy", anomalous_vectors)
     print("Saved Anomalous vectors")
 
     print("Generating Real data vectors...")
     real_vectors = infer_and_get_embeddings(real_dev_loader, inferer)
-    np.save("real_embeddings.npy", real_vectors)
+    np.save("real_dev_embeddings.npy", real_vectors)
     print("Saved Real data vectors")
 
     # Can add inference calls on the training dataloaders here as well
+    print("Generating Anomalous vectors...")
+    anomalous_vectors = infer_and_get_embeddings(anomalous_train_loader, inferer)
+    np.save("anomalous_train_embeddings.npy", anomalous_vectors)
+    print("Saved Anomalous vectors")
+
+    print("Generating Real data vectors...")
+    real_vectors = infer_and_get_embeddings(real_train_loader, inferer)
+    np.save("real_train_embeddings.npy", real_vectors)
+    print("Saved Real data vectors")
 
 
 if __name__ == "__main__":

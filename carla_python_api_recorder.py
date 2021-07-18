@@ -15,10 +15,15 @@ import sys
 import pandas as pd
 from tqdm import tqdm
 import math
-import spawn
 
+
+CARLA_VERSION = "0.9.11"
 try:
-    sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+    # sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+    if CARLA_VERSION == "0.9.9":
+        sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+    elif CARLA_VERSION == "0.9.11":
+        sys.path.append("./libs/carla-0.9.11-py3.7-linux-x86_64.egg")
 except IndexError:
     pass
 
@@ -31,8 +36,11 @@ import logging
 import click
 import pathlib
 
+import spawn
+
 current_dir = pathlib.Path(__file__).parent.absolute()
-random.seed(27)
+SEED = 27
+random.seed(SEED)
 
 
 def get_metadata(actor, frame_id):
@@ -149,6 +157,9 @@ def run(
         blueprints = world.get_blueprint_library().filter("vehicle.*")
         traffic_manager = client.get_trafficmanager()
         traffic_manager.set_global_distance_to_leading_vehicle(2.0)
+        if CARLA_VERSION == "0.9.11":
+            print("Using deterministic Traffic Manager")
+            traffic_manager.set_random_device_seed(SEED)
         settings = client.get_world().get_settings()
         if not settings.synchronous_mode:
             traffic_manager.set_synchronous_mode(True)

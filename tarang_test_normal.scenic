@@ -1,6 +1,7 @@
 import sys
 try:
-    sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+#    sys.path.append("./libs/carla-0.9.9-py3.7-linux-x86_64.egg")
+    sys.path.append("./libs/carla-0.9.11-py3.7-linux-x86_64.egg")
 except IndexError:
     pass
 
